@@ -541,12 +541,20 @@ namespace UdonSharp
 
         void ISerializationCallbackReceiver.OnBeforeSerialize()
         {
+            // Unity may invoke serialization callbacks on destroyed (fake-null) objects during
+            // prefab saves, play-mode scene processing, and other editor serialization passes.
+            if (!this)
+                return;
+
             UnitySerializationUtility.SerializeUnityObject(this, ref serializationData);
             _backingUdonBehaviourDump = _udonSharpBackingUdonBehaviour;
         }
 
         void ISerializationCallbackReceiver.OnAfterDeserialize()
         {
+            if (!this)
+                return;
+
             UnitySerializationUtility.DeserializeUnityObject(this, ref serializationData);
 
             if (_backingUdonBehaviourDump)

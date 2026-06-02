@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using UdonSharp.Compiler.Emit;
 using UdonSharp.Compiler.Symbols;
+using UdonSharp.Compiler.Udon;
 using UdonSharp.Core;
 using NotSupportedException = UdonSharp.Core.NotSupportedException;
 
@@ -32,7 +33,7 @@ namespace UdonSharp.Compiler.Binder
             switch (fieldSymbol)
             {
                 case ExternFieldSymbol externField:
-                    return new BoundExternFieldAccessExpression(node, externField, sourceExpression);
+                    return new BoundExternFieldAccessExpression(node, context, externField, sourceExpression);
                 case UdonSharpBehaviourFieldSymbol udonSharpBehaviourFieldSymbol:
                     return new BoundUdonSharpBehaviourFieldAccessExpression(node, udonSharpBehaviourFieldSymbol, sourceExpression);
                 case ImportedUdonSharpFieldSymbol importedUdonSharpFieldSymbol:
@@ -86,10 +87,13 @@ namespace UdonSharp.Compiler.Binder
 
             public override TypeSymbol ValueType => Field.Type;
 
-            public BoundExternFieldAccessExpression(SyntaxNode node, ExternFieldSymbol field, BoundExpression sourceExpression) 
+            public BoundExternFieldAccessExpression(SyntaxNode node, AbstractPhaseContext context, ExternFieldSymbol field, BoundExpression sourceExpression) 
                 : base(node, sourceExpression)
             {
-                Field = field;
+                // This is access, so check for get only
+                // Passing originalSymbol.RoslynSymbol to synthesized fields to inherit attributes (static, const, etc.)
+                Field = SetupExternAccessor(node, context, field, sourceExpression, CompilerUdonInterface.FieldAccessorType.Get,
+                    (candidate) => new ExternSynthesizedFieldSymbol(field.RoslynSymbol, context, field.Name, candidate, field.Type));
             }
 
             public override Value EmitSet(EmitContext context, BoundExpression valueExpression)

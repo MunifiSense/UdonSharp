@@ -30,7 +30,7 @@ namespace UdonSharp.Compiler.Symbols
 
         public bool IsEnum => RoslynSymbol.TypeKind == TypeKind.Enum;
 
-        public bool IsUdonSharpBehaviour => !IsArray && (((INamedTypeSymbol) RoslynSymbol).IsUdonSharpBehaviour());
+        public bool IsUdonSharpBehaviour => !IsArray && RoslynSymbol is INamedTypeSymbol namedType && namedType.IsUdonSharpBehaviour();
 
         public ExternTypeSymbol UdonType { get; protected set; }
 

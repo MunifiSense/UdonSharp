@@ -586,13 +586,21 @@ namespace UdonSharp
         
         protected override void OnBeforeSerialize()
         {
-            UnitySerializationUtility.SerializeUnityObject(this, ref serializationData);
+            if (this)
+            {
+                UnitySerializationUtility.SerializeUnityObject(this, ref serializationData);
+            }
+
             base.OnBeforeSerialize();
         }
 
         protected override void OnAfterDeserialize()
         {
-            UnitySerializationUtility.DeserializeUnityObject(this, ref serializationData);
+            if (this)
+            {
+                UnitySerializationUtility.DeserializeUnityObject(this, ref serializationData);
+            }
+
             base.OnAfterDeserialize();
         }
     }

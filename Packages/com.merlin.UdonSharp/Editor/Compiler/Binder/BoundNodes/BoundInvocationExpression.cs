@@ -108,7 +108,9 @@ namespace UdonSharp.Compiler.Binder
                 {
                     // Return constant value based on if generic type is a user defined type
                     TypeSymbol typeArg = symbol.TypeArguments[0];
-                    bool isUserDefinedType = typeArg.IsUdonSharpBehaviour || typeArg is ImportedUdonSharpTypeSymbol;
+                    bool isUserDefinedType = typeArg is TypeParameterSymbol
+                        ? false
+                        : typeArg.IsUdonSharpBehaviour || typeArg is ImportedUdonSharpTypeSymbol;
                     IConstantValue constantValue = new ConstantValue<bool>(isUserDefinedType);
 
                     createdInvocation = new BoundConstantInvocationExpression(node, constantValue, context.GetTypeSymbol(SpecialType.System_Boolean));
@@ -118,34 +120,44 @@ namespace UdonSharp.Compiler.Binder
                 {
                     // Return constant value based on if generic type is a user defined type with Equals
                     TypeSymbol typeArg = symbol.TypeArguments[0];
-                    bool isUserDefinedTypeWithEquals = typeArg.IsUdonSharpBehaviour || typeArg is ImportedUdonSharpTypeSymbol;
-                    if (isUserDefinedTypeWithEquals)
+                    bool isUserDefinedTypeWithEquals = false;
+
+                    if (typeArg is TypeParameterSymbol)
                     {
-                        // Check if the type has an Equals method
-                        IEnumerable<MethodSymbol> equalsMethods = typeArg.GetMembers<MethodSymbol>("Equals", context);
-                        isUserDefinedTypeWithEquals = equalsMethods.Any(e => e.Parameters.Length == 1 && 
-                                                                                            e.ReturnType == context.GetTypeSymbol(SpecialType.System_Boolean) && 
-                                                                                            e.Parameters[0].Type == context.GetTypeSymbol(SpecialType.System_Object));
-
-                        TypeSymbol objectType = context.GetTypeSymbol(SpecialType.System_Object);
-                        
-                        if (typeArg.IsUdonSharpBehaviour)
+                        // Open generic type parameters (e.g. List<T>.Contains) are resolved per-call-site elsewhere
+                    }
+                    else
+                    {
+                        isUserDefinedTypeWithEquals = typeArg.IsUdonSharpBehaviour || typeArg is ImportedUdonSharpTypeSymbol;
+                        if (isUserDefinedTypeWithEquals)
                         {
-                            while (!isUserDefinedTypeWithEquals && typeArg != null && typeArg.IsUdonSharpBehaviour)
-                            {
-                                if (typeArg.BaseType == objectType)
-                                    break;
+                            // Check if the type has an Equals method
+                            IEnumerable<MethodSymbol> equalsMethods = typeArg.GetMembers<MethodSymbol>("Equals", context);
+                            isUserDefinedTypeWithEquals = equalsMethods.Any(e => e.Parameters.Length == 1 &&
+                                e.ReturnType == context.GetTypeSymbol(SpecialType.System_Boolean) &&
+                                e.Parameters[0].Type == context.GetTypeSymbol(SpecialType.System_Object));
 
-                                equalsMethods = typeArg.BaseType.GetMembers<MethodSymbol>("Equals", context);
-                                isUserDefinedTypeWithEquals = equalsMethods.Any(e => e.Parameters.Length == 1 && 
-                                                                                            e.ReturnType == context.GetTypeSymbol(SpecialType.System_Boolean) && 
-                                                                                            e.Parameters[0].Type == context.GetTypeSymbol(SpecialType.System_Object));
-                                
-                                typeArg = typeArg.BaseType;
+                            TypeSymbol objectType = context.GetTypeSymbol(SpecialType.System_Object);
+
+                            if (typeArg.IsUdonSharpBehaviour)
+                            {
+                                while (!isUserDefinedTypeWithEquals && typeArg != null && typeArg.IsUdonSharpBehaviour)
+                                {
+                                    TypeSymbol baseType = typeArg.BaseType;
+                                    if (baseType == null || baseType == objectType)
+                                        break;
+
+                                    equalsMethods = baseType.GetMembers<MethodSymbol>("Equals", context);
+                                    isUserDefinedTypeWithEquals = equalsMethods.Any(e => e.Parameters.Length == 1 &&
+                                        e.ReturnType == context.GetTypeSymbol(SpecialType.System_Boolean) &&
+                                        e.Parameters[0].Type == context.GetTypeSymbol(SpecialType.System_Object));
+
+                                    typeArg = baseType;
+                                }
                             }
                         }
                     }
-                    
+
                     IConstantValue constantValue = new ConstantValue<bool>(isUserDefinedTypeWithEquals);
 
                     createdInvocation = new BoundConstantInvocationExpression(node, constantValue, context.GetTypeSymbol(SpecialType.System_Boolean));

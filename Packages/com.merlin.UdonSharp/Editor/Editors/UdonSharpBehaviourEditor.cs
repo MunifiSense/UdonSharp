@@ -471,7 +471,11 @@ namespace UdonSharpEditor
     /// </summary>
     internal class UdonSharpBehaviourOverrideEditor : Editor
     {
+        private const double SyncThrottleIntervalSeconds = 1.0;
+
         private Editor _userEditor;
+        private double _lastUdonToProxySyncTime;
+        private int _inspectorGuiDepth;
 
         private void OnEnable()
         {
@@ -719,6 +723,12 @@ namespace UdonSharpEditor
                     return;
                 }
 
+                // Repaint() during this handler re-enters IMGUI before EndVertical and causes GUIClip imbalance.
+                if (_inspectorGuiDepth > 0)
+                    return;
+
+                _inspectorGuiDepth++;
+
                 bool isAnimating = AnimationMode.InAnimationMode();
                 
                 if (isAnimating)
@@ -739,15 +749,22 @@ namespace UdonSharpEditor
                 
                 try
                 {
-                    if (!skipSerialize && EditorApplication.isPlaying) // We only need this copy in play mode since U# now goes off the behaviour data for setting up UdonBehaviours
+                    if (!skipSerialize && EditorApplication.isPlaying)
                     {
-                        foreach (Object targetProxy in targets)
-                            UdonSharpEditorUtility.CopyUdonToProxy((UdonSharpBehaviour)targetProxy, ProxySerializationPolicy.RootOnly);
+                        double now = EditorApplication.timeSinceStartup;
+                        if (now - _lastUdonToProxySyncTime >= SyncThrottleIntervalSeconds)
+                        {
+                            _lastUdonToProxySyncTime = now;
+                            foreach (Object targetProxy in targets)
+                                UdonSharpEditorUtility.CopyUdonToProxy((UdonSharpBehaviour)targetProxy, ProxySerializationPolicy.RootOnly);
+                        }
+
                         if (GUILayout.Button("Refresh (Sync full state from Udon)"))
                         {
                             foreach (Object targetProxy in targets)
                                 UdonSharpEditorUtility.CopyUdonToProxy((UdonSharpBehaviour)targetProxy, ProxySerializationPolicy.All);
-                            Repaint();
+                            _lastUdonToProxySyncTime = EditorApplication.timeSinceStartup;
+                            ScheduleInspectorRepaint(container);
                         }
                     }
                 
@@ -770,10 +787,24 @@ namespace UdonSharpEditor
                     
                     EditorGUIUtility.wideMode = previousWideMode;
                     EditorGUIUtility.hierarchyMode = previousHierarchyMode;
+
+                    _inspectorGuiDepth--;
                 }
             };
 
             return container;
+        }
+
+        private static void ScheduleInspectorRepaint(IMGUIContainer container)
+        {
+            if (container == null)
+                return;
+
+            EditorApplication.delayCall += () =>
+            {
+                if (container != null)
+                    container.MarkDirtyRepaint();
+            };
         }
 
         private static readonly GUIContent _jaggedArrayHeader = new GUIContent("Jagged Arrays", "Fallback inspector handling for jagged arrays since Unity does not handle serializing them.");

@@ -221,8 +221,8 @@ namespace UdonSharp.Compiler.Symbols
             if (autoField == null)
                 return null;
 
-            return new BoundAssignmentExpression(node, BoundAccessExpression.BindAccess(context, node, autoField, null),
-                BoundAccessExpression.BindAccess(context, node, Parameters[0], null));
+            return new BoundAssignmentExpression(node, context, autoField, BoundAccessExpression.BindAccess(context, node, autoField, null),
+                null, BoundAccessExpression.BindAccess(context, node, Parameters[0], null));
         }
         
         private BoundNode GeneratePropertyAutoGetter(BindContext context, SyntaxNode node)
