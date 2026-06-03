@@ -12,13 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: RecursionTest
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 6842528ddd61e8b43923eb462ec1d68d,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: a63a86dff78285642b9fb028c72666ab,
     type: 2}
   udonAssembly: 
   assemblyError: 
   sourceCsScript: {fileID: 11500000, guid: 41aa655b07e37a84292568dd0dc1aac5, type: 3}
   scriptVersion: 2
   compiledVersion: 2
+  networkEntrypointMetadata: []
   behaviourSyncMode: 0
   hasInteractEvent: 0
   scriptID: -443843821985656606

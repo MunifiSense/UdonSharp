@@ -12,13 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: InstantiatedObjectTesterScript
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: ced0b6cc59964514e83ccaaf9c97ea4c,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 53d89a06e61dfaa40a57ab14316199e6,
     type: 2}
   udonAssembly: 
   assemblyError: 
   sourceCsScript: {fileID: 11500000, guid: f954ee1bc9f7221428b5efac9703574f, type: 3}
   scriptVersion: 2
   compiledVersion: 2
+  networkEntrypointMetadata: []
   behaviourSyncMode: 0
   hasInteractEvent: 0
   scriptID: 3115546563226124005

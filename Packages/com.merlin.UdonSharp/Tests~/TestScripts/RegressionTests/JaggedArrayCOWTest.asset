@@ -12,13 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: JaggedArrayCOWTest
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 97f6528ff3744164d9f5714b735a3187,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 62abaa050d43dcf4a96d72bd685eb8b8,
     type: 2}
   udonAssembly: 
   assemblyError: 
   sourceCsScript: {fileID: 11500000, guid: bf5d53f89a4debd4a9206227d57dfc82, type: 3}
   scriptVersion: 2
   compiledVersion: 2
+  networkEntrypointMetadata: []
   behaviourSyncMode: 0
   hasInteractEvent: 0
   scriptID: -7698177035858733521

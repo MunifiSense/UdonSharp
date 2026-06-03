@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -488,17 +488,11 @@ namespace UdonSharp.Compiler.Emit
             if (maxEnumVal > 2048)
                 throw new System.NotSupportedException($"Cannot cast integer to enum {enumType.Name} because target enum has too many potential states({maxEnumVal}) to contain in an UdonBehaviour reasonably");
 
-            // Find the most significant bit of this enum so we can generate all combinations <= it
-            int mostSignificantBit = 0;
-            int currentEnumVal = maxEnumVal;
-
-            while (currentEnumVal > 0)
-            {
-                currentEnumVal >>= 1;
-                ++mostSignificantBit;
-            }
-
-            int enumValCount = (1 << mostSignificantBit) - 1;
+            // Build a dense lookup up to the same cap we enforce above.
+            // This keeps casts like `(SomeEnum)31` safe even when the enum only declares
+            // lower values (eg. flags/composite values that are not explicitly named).
+            const int enumCastMax = 2048;
+            int enumValCount = enumCastMax + 1;
 
             object[] enumConstArr = new object[enumValCount];
 

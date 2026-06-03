@@ -12,13 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: ImplicitConversions
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 42897bc78e08ce6468bdecf0dccf21c4,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: d24402911bb661349a64bf150d6c061f,
     type: 2}
   udonAssembly: 
   assemblyError: 
   sourceCsScript: {fileID: 11500000, guid: 2c147426d970bfd4a895b08ba5b419b9, type: 3}
   scriptVersion: 2
   compiledVersion: 2
+  networkEntrypointMetadata: []
   behaviourSyncMode: 0
   hasInteractEvent: 0
   scriptID: -5153978056594724991

@@ -12,13 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: LocalFunctionTest
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: a7f9f935d1a61ee47ac656a48ce9008d,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 25a4e49d125387a4f90cf94e08ca7f0b,
     type: 2}
   udonAssembly: 
   assemblyError: 
   sourceCsScript: {fileID: 11500000, guid: f083a144be19fd440ab9964b31e9ffab, type: 3}
   scriptVersion: 2
   compiledVersion: 2
+  networkEntrypointMetadata: []
   behaviourSyncMode: 0
   hasInteractEvent: 0
   scriptID: -393328160782688748

@@ -12,13 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: IntegrationTestRunner
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 7e951d629b368234b96d44f3a2db71db,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: f41242131cbd1bf479f13631b966bdb3,
     type: 2}
   udonAssembly: 
   assemblyError: 
   sourceCsScript: {fileID: 11500000, guid: be8c6b27d01e6b549ba049d7e4394e7a, type: 3}
   scriptVersion: 2
   compiledVersion: 2
+  networkEntrypointMetadata: []
   behaviourSyncMode: 2
   hasInteractEvent: 1
   scriptID: -2203100209367385113

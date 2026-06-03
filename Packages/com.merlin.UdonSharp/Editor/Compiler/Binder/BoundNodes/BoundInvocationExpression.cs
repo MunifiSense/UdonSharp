@@ -404,6 +404,19 @@ namespace UdonSharp.Compiler.Binder
             MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
             out BoundInvocationExpression createdInvocation)
         {
+            if (symbol.Name == "ToString" &&
+                symbol.ContainingType != null &&
+                symbol.ContainingType == context.GetTypeSymbol(SpecialType.System_Enum) &&
+                instanceExpression != null &&
+                parameterExpressions.Length == 0 &&
+                instanceExpression.ValueType.IsEnum &&
+                instanceExpression.ValueType.TryGetSystemType(out Type enumSystemType) &&
+                enumSystemType.IsEnum)
+            {
+                createdInvocation = new BoundEnumToStringInvocation(node, context, instanceExpression);
+                return true;
+            }
+            
             if ((symbol.Name == "ToString" || symbol.Name == "GetHashCode" || symbol.Name == "Equals") &&
                 symbol.ContainingType != null &&
                 symbol.ContainingType == context.GetTypeSymbol(SpecialType.System_Enum))
@@ -1007,6 +1020,83 @@ namespace UdonSharp.Compiler.Binder
             public BoundBuiltinOperatorInvocationExpression(SyntaxNode node, AbstractPhaseContext context, MethodSymbol method, BoundExpression[] operandExpressions)
                 :base(node, context, method, null, operandExpressions)
             {
+            }
+        }
+
+        private sealed class BoundEnumToStringInvocation : BoundInvocationExpression
+        {
+            private readonly TypeSymbol _enumType;
+            private readonly TypeSymbol _stringType;
+            private readonly Type _enumSystemType;
+            private readonly (object value, string name)[] _enumValueNamePairs;
+
+            public override TypeSymbol ValueType => _stringType;
+
+            public BoundEnumToStringInvocation(SyntaxNode node, AbstractPhaseContext context, BoundExpression sourceExpression)
+                : base(node,
+                    context.GetTypeSymbol(SpecialType.System_Object).GetMember<MethodSymbol>("ToString", context),
+                    sourceExpression,
+                    Array.Empty<BoundExpression>())
+            {
+                _enumType = sourceExpression.ValueType;
+                _stringType = context.GetTypeSymbol(SpecialType.System_String);
+                
+                if (!_enumType.TryGetSystemType(out _enumSystemType) || !_enumSystemType.IsEnum)
+                    throw new InvalidOperationException("Enum ToString shim can only be used on enum types");
+
+                Array enumValues = Enum.GetValues(_enumSystemType);
+                _enumValueNamePairs = new (object value, string name)[enumValues.Length];
+
+                for (int i = 0; i < enumValues.Length; ++i)
+                {
+                    object enumValue = enumValues.GetValue(i);
+                    _enumValueNamePairs[i] = (enumValue, Enum.GetName(_enumSystemType, enumValue));
+                }
+            }
+
+            public override Value EmitValue(EmitContext context)
+            {
+                Value sourceValue = context.EmitValue(SourceExpression);
+                Value returnValue = context.GetReturnValue(_stringType);
+
+                TypeSymbol objectType = context.GetTypeSymbol(SpecialType.System_Object);
+                MethodSymbol objectEqualsMethod = objectType.GetMember<MethodSymbol>("Equals", context);
+                MethodSymbol objectToStringMethod = objectType.GetMember<MethodSymbol>("ToString", context);
+
+                JumpLabel endLabel = context.Module.CreateLabel();
+
+                BoundExpression boxedSourceExpression = new BoundCastExpression(SyntaxNode,
+                    BoundAccessExpression.BindAccess(sourceValue), objectType, true);
+
+                foreach ((object enumValue, string enumName) in _enumValueNamePairs)
+                {
+                    JumpLabel nextValueLabel = context.Module.CreateLabel();
+                    object constantValue = _enumType.IsExtern
+                        ? enumValue
+                        : Convert.ChangeType(enumValue, _enumType.UdonType.SystemType);
+
+                    BoundExpression boxedEnumValueExpression = new BoundCastExpression(SyntaxNode,
+                        new BoundConstantExpression(constantValue, _enumType, SyntaxNode), objectType, true);
+                    
+                    BoundExpression equalityExpression = CreateBoundInvocation(context, SyntaxNode,
+                        objectEqualsMethod, boxedSourceExpression, new [] { boxedEnumValueExpression });
+                    
+                    Value isMatchValue = context.EmitValue(equalityExpression);
+                    context.Module.AddJumpIfFalse(nextValueLabel, isMatchValue);
+
+                    context.EmitValueAssignment(returnValue, new BoundConstantExpression(enumName, _stringType, SyntaxNode));
+                    context.Module.AddJump(endLabel);
+                    context.Module.LabelJump(nextValueLabel);
+                }
+
+                // Fallback to object ToString for unnamed values (for example bitmask combinations).
+                BoundExpression fallbackExpression = CreateBoundInvocation(context, SyntaxNode,
+                    objectToStringMethod, boxedSourceExpression, Array.Empty<BoundExpression>());
+                context.EmitValueAssignment(returnValue, fallbackExpression);
+
+                context.Module.LabelJump(endLabel);
+
+                return returnValue;
             }
         }
         

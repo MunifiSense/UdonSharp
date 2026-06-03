@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f11136daadff0b44ac2278a314682ab, type: 3}
   m_Name: EmptyGraph
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: 67858b9767d89524a9c6b74098680345,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 46e5b1cf12ff8ad46b85cad912fdbbbe,
     type: 2}
   udonAssembly: ".data_start\r\n\r\n    \r\n\r\n.data_end\r\n\r\n.code_start\r\n\r\n\r\n.code_end\r\n"
   assemblyError: 
@@ -22,8 +22,5 @@ MonoBehaviour:
     nodes: []
     updateOrder: 0
   graphElementData: []
-  viewTransform:
-    position: {x: 0, y: 0}
-    scale: 1
   version: 1.0.0
   showAssembly: 0

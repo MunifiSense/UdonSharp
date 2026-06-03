@@ -69,6 +69,7 @@ Assets/UdonSharp/Scripts/Editor.meta
 **/.idea/*
 Assets/Udon.meta
 [Aa]ssets/SerializedUdonPrograms*
+/ClientSimStorage/
 Packages/*
 
 # UdonSharp stuff
@@ -96,6 +97,7 @@ Assets/Resources.meta
 Assets/Samples
 
 Packages/com.vrchat.vrcsdk3
+Packages/com.vrchat.*
 
 # Nuke Artifacts
 !**/Tools/Nuke/UdonSharpBuild/UdonSharpBuild.csproj
@@ -120,3 +122,7 @@ Assets/XR
 Assets/Scenes.meta
 Assets/XR.meta
 Packages/com.vrchat.core.vpm-resolver
+
+# Local Unity/VRChat editor state
+/UserSettings/
+/ProjectSettings/Packages/

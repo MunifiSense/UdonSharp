@@ -745,6 +745,76 @@ namespace UdonSharp.Compiler.Binder
         
         public override BoundNode VisitBinaryExpression(BinaryExpressionSyntax node)
         {
+            if (node.Kind() == SyntaxKind.AsExpression)
+            {
+                BoundExpression sourceExpression = VisitExpression(node.Left);
+                TypeSymbol targetType = GetTypeSymbol(node.Right);
+
+                return new BoundAsExpression(node, sourceExpression, targetType);
+            }
+            
+            if (node.Kind() == SyntaxKind.IsExpression)
+            {
+                BoundExpression sourceExpression = VisitExpression(node.Left);
+                TypeSymbol targetType;
+
+                // Nullable value-type checks (eg. `obj is int?`) should behave the same as checking
+                // against the underlying value type for boxed values.
+                if (node.Right is NullableTypeSyntax nullableTypeSyntax)
+                    targetType = GetTypeSymbol(nullableTypeSyntax.ElementType);
+                else
+                    targetType = GetTypeSymbol(node.Right);
+
+                if (targetType == null)
+                    throw new NotSupportedException("Could not resolve target type for 'is' expression", node);
+
+                TypeSymbol objectType = Context.GetTypeSymbol(SpecialType.System_Object);
+                BoundExpression nullExpression = new BoundConstantExpression(new ConstantValue<object>(null), objectType, node);
+
+                if (!targetType.IsValueType)
+                {
+                    BoundExpression asExpression = new BoundAsExpression(node, sourceExpression, targetType);
+                    BoundExpression asObjectExpression = ConvertExpression(node, asExpression, objectType);
+                    MethodSymbol objectInequality = new ExternSynthesizedOperatorSymbol(BuiltinOperatorType.Inequality, objectType, Context);
+                    
+                    return BoundInvocationExpression.CreateBoundInvocation(Context, node, objectInequality, null,
+                        new[] { asObjectExpression, nullExpression });
+                }
+
+                // Value-type checks cannot use "as", so lower to:
+                //   (source as object) != null && ((source as object).GetType() == typeof(TargetType))
+                BoundExpression boxedSourceExpression = ConvertExpression(node, sourceExpression, objectType);
+                
+                MethodSymbol objectInequalityCheck = new ExternSynthesizedOperatorSymbol(BuiltinOperatorType.Inequality, objectType, Context);
+                BoundExpression sourceNotNullExpression = BoundInvocationExpression.CreateBoundInvocation(Context, node,
+                    objectInequalityCheck, null, new[] { boxedSourceExpression, nullExpression });
+
+                MethodSymbol getTypeMethod = objectType.GetMembers<MethodSymbol>("GetType", Context)
+                    .First(method => method.Parameters.Length == 0);
+                BoundExpression sourceRuntimeTypeExpression = BoundInvocationExpression.CreateBoundInvocation(Context, node,
+                    getTypeMethod, boxedSourceExpression, Array.Empty<BoundExpression>());
+
+                Type targetSystemType = targetType.UdonType.SystemType;
+                if (targetSystemType.IsGenericType &&
+                    targetSystemType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                {
+                    targetSystemType = targetSystemType.GetGenericArguments()[0];
+                }
+                
+                TypeSymbol typeType = Context.GetTypeSymbol(typeof(Type));
+                BoundExpression targetTypeExpression = new BoundConstantExpression(targetSystemType, typeType, node);
+                
+                MethodSymbol objectEquality = new ExternSynthesizedOperatorSymbol(BuiltinOperatorType.Equality, objectType, Context);
+                BoundExpression typeMatchesExpression = BoundInvocationExpression.CreateBoundInvocation(Context, node,
+                    objectEquality, null, new[]
+                    {
+                        ConvertExpression(node, sourceRuntimeTypeExpression, objectType),
+                        ConvertExpression(node, targetTypeExpression, objectType)
+                    });
+
+                return new BoundShortCircuitOperatorExpression(node, BuiltinOperatorType.LogicalAnd, sourceNotNullExpression, typeMatchesExpression, Context);
+            }
+
             if (node.Kind() == SyntaxKind.LogicalOrExpression ||
                 node.Kind() == SyntaxKind.LogicalAndExpression)
                 return HandleShortCircuitOperator(node);

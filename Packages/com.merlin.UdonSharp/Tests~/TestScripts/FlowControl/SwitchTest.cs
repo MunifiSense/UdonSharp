@@ -43,6 +43,13 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Extern enum switch 1", ExternEnumSwitch(CameraClearFlags.Skybox) == "Skybox");
             tester.TestAssertion("Extern enum switch 2", ExternEnumSwitch(CameraClearFlags.Color) == "Color");
             tester.TestAssertion("Extern enum switch 3", ExternEnumSwitch(CameraClearFlags.Depth) == "Default enum handling Depth");
+            tester.TestAssertion("Extern enum int cast 1", ExternEnumSwitch((CameraClearFlags)1) == "Skybox");
+            tester.TestAssertion("Extern enum int cast 2", ExternEnumSwitch((CameraClearFlags)2) == "Color");
+            tester.TestAssertion("Extern enum int cast 3", ExternEnumSwitch((CameraClearFlags)3) == "Default enum handling Depth");
+            tester.TestAssertion("Extern enum ToString 1", ((CameraClearFlags)1).ToString() == "Skybox");
+            string enumColorName = ((CameraClearFlags)2).ToString();
+            tester.TestAssertion("Extern enum ToString 2", enumColorName == "Color" || enumColorName == "SolidColor");
+            tester.TestAssertion("Extern enum ToString fallback", ((CameraClearFlags)31).ToString() == "31");
             
             tester.TestAssertion("String switch 1", StringSwitch("testVal") == "the testVal");
             tester.TestAssertion("String switch 2", StringSwitch("testVal2") == "the testVal2");

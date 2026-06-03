@@ -12,13 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c333ccfdd0cbdbc4ca30cef2dd6e6b9b, type: 3}
   m_Name: InheritanceRootTest
   m_EditorClassIdentifier: 
-  serializedUdonProgramAsset: {fileID: 11400000, guid: d3fa617ebcb6d7f4597bb22204e4bf1c,
+  serializedUdonProgramAsset: {fileID: 11400000, guid: 44215fcfa1f919245a6813761f3415ad,
     type: 2}
   udonAssembly: 
   assemblyError: 
   sourceCsScript: {fileID: 11500000, guid: eecce5308ed265f4c9cc2f0a0f9e7c6b, type: 3}
   scriptVersion: 2
   compiledVersion: 2
+  networkEntrypointMetadata: []
   behaviourSyncMode: 0
   hasInteractEvent: 0
   scriptID: -7305262431828200066
