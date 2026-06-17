@@ -512,7 +512,8 @@ namespace UdonSharp.Compiler
                     {
                         if (diag.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error)
                         {
-                            compilationContext.AddDiagnostic(DiagnosticSeverity.Error, diag.Location, $"{diag.Severity.ToString().ToLower()} {diag.Id}: {diag.GetMessage()}");
+                            compilationContext.AddDiagnostic(DiagnosticSeverity.Error, diag.Location,
+                                RoslynDiagnosticRewriter.FormatDiagnostic(compilation, diag));
                         }
                     }
                 }

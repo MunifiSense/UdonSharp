@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -399,6 +400,92 @@ namespace UdonSharp.Compiler.Binder
             createdInvocation = null;
             return false;
         }
+
+        private static Type _vrcTMPDropdownExtensionType;
+
+        private static Type GetVRCTMPDropdownExtensionType()
+        {
+            if (_vrcTMPDropdownExtensionType == null)
+            {
+                System.Reflection.Assembly vrcAssembly = AppDomain.CurrentDomain.GetAssemblies()
+                    .FirstOrDefault(a => a.GetName().Name == "VRCSDK3");
+                _vrcTMPDropdownExtensionType = vrcAssembly?.GetType("VRC.SDK3.Components.VRCTMPDropdownExtension");
+            }
+
+            return _vrcTMPDropdownExtensionType;
+        }
+
+        private static bool IsTMPDropdownType(TypeSymbol typeSymbol)
+        {
+            for (TypeSymbol current = typeSymbol; current != null; current = current.BaseType)
+            {
+                if (current.ToString() == "TMPro.TMP_Dropdown")
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryGetTMPDropdownAddOptionsExtern(AbstractPhaseContext context, TypeSymbol dropdownType,
+            TypeSymbol stringArrayType, out ExternMethodSymbol externMethod)
+        {
+            externMethod = null;
+
+            Type extensionType = GetVRCTMPDropdownExtensionType();
+            if (extensionType == null || !TypeSymbol.TryGetSystemType(dropdownType, out Type dropdownSystemType))
+                return false;
+
+            MethodInfo methodInfo = extensionType.GetMethod("AddOptions", new[] { dropdownSystemType, typeof(string[]) });
+            if (methodInfo == null)
+                return false;
+
+            string externSignature = CompilerUdonInterface.GetUdonMethodName(methodInfo);
+            if (!CompilerUdonInterface.IsExposedToUdon(externSignature))
+                return false;
+
+            TypeSymbol voidType = context.GetTypeSymbol(SpecialType.System_Void);
+            externMethod = new ExternSynthesizedMethodSymbol(context, externSignature,
+                new[] { dropdownType, stringArrayType }, voidType, true);
+
+            return true;
+        }
+
+        private static bool TryCreateTMPDropdownAddOptionsInvocation(AbstractPhaseContext context, SyntaxNode node,
+            MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
+            out BoundInvocationExpression createdInvocation)
+        {
+            createdInvocation = null;
+
+            if (symbol.Name != "AddOptions" ||
+                instanceExpression == null ||
+                parameterExpressions.Length != 1 ||
+                !IsTMPDropdownType(instanceExpression.ValueType))
+                return false;
+
+            if (symbol.ContainingType?.ToString() == "VRC.SDK3.Components.VRCTMPDropdownExtension")
+                return false;
+
+            TypeSymbol stringType = context.GetTypeSymbol(SpecialType.System_String);
+            TypeSymbol stringArrayType = context.GetTypeSymbol(typeof(string[]));
+            TypeSymbol listStringType = context.GetTypeSymbol(typeof(List<>)).ConstructGenericType(context, stringType);
+
+            BoundExpression optionsExpression = parameterExpressions[0];
+
+            if (optionsExpression.ValueType != listStringType)
+                return false;
+
+            MethodSymbol toArrayMethod = listStringType.GetMember<MethodSymbol>("ToArray", context);
+            optionsExpression = CreateBoundInvocation(context, node, toArrayMethod, null, parameterExpressions);
+
+            if (!TryGetTMPDropdownAddOptionsExtern(context, instanceExpression.ValueType, stringArrayType,
+                    out ExternMethodSymbol externMethod))
+                return false;
+
+            createdInvocation = new BoundExternInvocation(node, context, externMethod, null,
+                new[] { instanceExpression, optionsExpression });
+
+            return true;
+        }
         
         private static bool TryCreateBaseEnumMethodInvocation(AbstractPhaseContext context, SyntaxNode node,
             MethodSymbol symbol, BoundExpression instanceExpression, BoundExpression[] parameterExpressions,
@@ -734,6 +821,9 @@ namespace UdonSharp.Compiler.Binder
                 return true;
             
             if (TryCreateTMPMethodInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
+                return true;
+
+            if (TryCreateTMPDropdownAddOptionsInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
                 return true;
             
             if (TryCreateBaseEnumMethodInvocation(context, node, symbol, instanceExpression, parameterExpressions, out createdInvocation))
