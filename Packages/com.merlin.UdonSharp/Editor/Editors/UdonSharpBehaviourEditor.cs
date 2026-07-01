@@ -131,6 +131,7 @@ namespace UdonSharpEditor
             Success,
             NoValidUSharpProgram,
             PrefabNeedsUpgrade,
+            IncorrectDerivedType,
         }
 
         private BehaviourInspectorErrorState errorState;
@@ -148,6 +149,14 @@ namespace UdonSharpEditor
                 {
                     UdonSharpUtils.LogWarning($"UdonBehaviour '{targetBehaviour}' is not using a valid U# program asset", targetBehaviour);
                     errorState = BehaviourInspectorErrorState.NoValidUSharpProgram;
+                    break;
+                }
+
+                Type behaviourType = UdonSharpEditorUtility.GetUdonSharpBehaviourType(targetBehaviour);
+                if (!typeof(UdonSharpBehaviour).IsAssignableFrom(behaviourType))
+                {
+                    UdonSharpUtils.LogWarning($"UdonBehaviour '{targetBehaviour}' is not derived from UdonSharpBehaviour", targetBehaviour);
+                    errorState = BehaviourInspectorErrorState.IncorrectDerivedType;
                     break;
                 }
 
@@ -242,6 +251,13 @@ namespace UdonSharpEditor
                     {
                         UdonSharpGUI.DrawCreateScriptButton(programAsset);
                     }
+                    break;
+                case BehaviourInspectorErrorState.IncorrectDerivedType:
+                    EditorGUILayout.HelpBox("The program source refers to a script that does not derive from UdonSharpBehaviour. Make sure your class derives from UdonSharpBehaviour.", MessageType.Error);
+
+                    EditorGUI.BeginDisabledGroup(true);
+                    EditorGUILayout.ObjectField("Program Source", ((UdonBehaviour)target).programSource, typeof(AbstractUdonProgramSource), false);
+                    EditorGUI.EndDisabledGroup();
                     break;
             }
         }
