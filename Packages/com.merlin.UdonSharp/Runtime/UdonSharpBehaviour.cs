@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Linq;
 using System.Reflection;
@@ -19,7 +19,7 @@ using VRC.Udon.Serialization.OdinSerializer;
 
 namespace UdonSharp
 {
-    public abstract class UdonSharpBehaviour : MonoBehaviour, ISerializationCallbackReceiver, ISupportsPrefabSerialization
+    public abstract class UdonSharpBehaviour : MonoBehaviour, ISerializationCallbackReceiver, ISupportsPrefabSerialization, IUdonEventReceiver
     {
         // Stubs for the UdonBehaviour functions that emulate Udon behavior
         
@@ -365,6 +365,90 @@ namespace UdonSharp
         /// </summary>
         [PublicAPI]
         public string InteractionText { get; set; }
+
+        #region IUdonEventReceiver / IUdonProgramVariableAccessTarget
+
+        [PublicAPI]
+        public Type GetProgramVariableType(string symbolName)
+        {
+            return GetType().GetField(symbolName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)?.FieldType;
+        }
+
+        T IUdonProgramVariableAccessTarget.GetProgramVariable<T>(string symbolName)
+        {
+            object value = GetProgramVariable(symbolName);
+            return value is T typed ? typed : default;
+        }
+
+        void IUdonProgramVariableAccessTarget.SetProgramVariable<T>(string symbolName, T value)
+        {
+            SetProgramVariable(symbolName, value);
+        }
+
+        bool IUdonProgramVariableAccessTarget.TryGetProgramVariable<T>(string symbolName, out T value)
+        {
+            FieldInfo field = GetType().GetField(symbolName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (field != null && typeof(T).IsAssignableFrom(field.FieldType))
+            {
+                value = (T)field.GetValue(this);
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        bool IUdonProgramVariableAccessTarget.TryGetProgramVariable(string symbolName, out object value)
+        {
+            FieldInfo field = GetType().GetField(symbolName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (field != null)
+            {
+                value = field.GetValue(this);
+                return true;
+            }
+
+            value = null;
+            return false;
+        }
+
+        bool IUdonEventReceiver.DisableEventProcessing { get; set; }
+
+        void IUdonEventReceiver.RunProgram(string eventName)
+        {
+            SendCustomEvent(eventName);
+        }
+
+        bool IUdonEventReceiver.RunEvent(string eventName)
+        {
+            SendCustomEvent(eventName);
+            return true;
+        }
+
+        bool IUdonEventReceiver.RunEvent<T0>(string eventName, (string symbolName, T0 value) parameter0)
+        {
+            return false;
+        }
+
+        bool IUdonEventReceiver.RunEvent<T0, T1>(string eventName, (string symbolName, T0 value) parameter0, (string symbolName, T1 value) parameter1)
+        {
+            return false;
+        }
+
+        bool IUdonEventReceiver.RunEvent<T0, T1, T2>(string eventName, (string symbolName, T0 value) parameter0, (string symbolName, T1 value) parameter1, (string symbolName, T2 value) parameter2)
+        {
+            return false;
+        }
+
+        bool IUdonEventReceiver.RunEvent(string eventName, params (string symbolName, object value)[] programVariables)
+        {
+            return false;
+        }
+
+        void IUdonEventReceiver.RunInputEvent(string eventName, VRC.Udon.Common.UdonInputEventArgs args)
+        {
+        }
+
+        #endregion
 
         [Obsolete("This method is obsolete, use Object.Instantiate(gameObject) instead")]
         protected static GameObject VRCInstantiate(GameObject original)

@@ -135,7 +135,7 @@ namespace UdonSharp.Compiler.Symbols
 
             if (IsUdonSharpBehaviour)
             {
-                if (RoslynSymbol.AllInterfaces.Length > 2) // Be lazy and ignore the serialization callback receiver since this is temporary
+                if (RoslynSymbol.Interfaces.Length > 0)
                     throw new NotSupportedException("Interfaces are not yet handled by U#");
                 
                 SetupAttributes(context);
