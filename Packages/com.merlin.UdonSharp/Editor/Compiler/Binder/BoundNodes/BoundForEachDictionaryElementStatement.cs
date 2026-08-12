@@ -54,9 +54,8 @@ namespace UdonSharp.Compiler.Binder
             BoundAccessExpression iteratorValueAccess = BoundAccessExpression.BindAccess(iteratorValue);
             
             BoundExpression getCurrentExpression = BoundInvocationExpression.CreateBoundInvocation(context, SyntaxNode, IteratorCurrentPropertyGet, iteratorValueAccess, Array.Empty<BoundExpression>());
-            // Set the KeyValuePair reference to the specified element value, this isn't technically in spec but since the KeyValuePair is a struct we can't really easily properly support it either way so we may as well avoid extra allocations
-            Value iteratorCurrentValue = context.EmitValue(getCurrentExpression);
-            iteratorCurrentValue.MarkUsedRecursively();
+            // DictionaryIterator allocates a fresh KeyValuePair each MoveNext so stored pairs
+            // (e.g. List.Add(kvp)) keep distinct key/value snapshots.
             
             BoundExpression moveNext = BoundInvocationExpression.CreateBoundInvocation(context, SyntaxNode, IteratorMoveNextMethod, iteratorValueAccess, Array.Empty<BoundExpression>());
             
@@ -70,8 +69,8 @@ namespace UdonSharp.Compiler.Binder
             Value moveNextResult = context.EmitValue(moveNext);
             context.Module.AddJumpIfFalse(exitLoopLabel, moveNextResult);
             
-            // Copy the Current reference to the user value, just in case the user modifies the value in the loop
-            context.EmitValueAssignment(context.GetUserValue(ValueSymbol), BoundAccessExpression.BindAccess(iteratorCurrentValue));
+            // Read Current after MoveNext; each step returns a new KeyValuePair instance.
+            context.EmitValueAssignment(context.GetUserValue(ValueSymbol), getCurrentExpression);
             
             context.Emit(BodyStatement);
             

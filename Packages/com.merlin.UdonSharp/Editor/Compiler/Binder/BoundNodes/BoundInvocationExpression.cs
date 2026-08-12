@@ -475,7 +475,7 @@ namespace UdonSharp.Compiler.Binder
                 return false;
 
             MethodSymbol toArrayMethod = listStringType.GetMember<MethodSymbol>("ToArray", context);
-            optionsExpression = CreateBoundInvocation(context, node, toArrayMethod, null, parameterExpressions);
+            optionsExpression = CreateBoundInvocation(context, node, toArrayMethod, optionsExpression, Array.Empty<BoundExpression>());
 
             if (!TryGetTMPDropdownAddOptionsExtern(context, instanceExpression.ValueType, stringArrayType,
                     out ExternMethodSymbol externMethod))

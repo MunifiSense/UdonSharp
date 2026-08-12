@@ -100,13 +100,13 @@ namespace UdonSharp.Serialization
             MethodInfo moveNextMethod = enumerator.GetType().GetMethod("MoveNext");
             
             PropertyInfo currentProperty = enumerator.GetType().GetProperty("Current");
-            object current = currentProperty.GetValue(enumerator);
-            
-            FieldInfo keyField = current.GetType().GetField("key");
-            FieldInfo valueField = current.GetType().GetField("value");
             
             while ((bool)moveNextMethod.Invoke(enumerator, null))
             {
+                object current = currentProperty.GetValue(enumerator);
+                FieldInfo keyField = current.GetType().GetField("key");
+                FieldInfo valueField = current.GetType().GetField("value");
+                
                 object key = keyField.GetValue(current);
                 object value = valueField.GetValue(current);
                 
