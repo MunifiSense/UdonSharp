@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Linq;
+using Microsoft.CodeAnalysis;
 using UdonSharp.Compiler.Udon;
 
 namespace UdonSharp.Compiler.Symbols
@@ -16,7 +17,7 @@ namespace UdonSharp.Compiler.Symbols
             : base(null, context)
         {
             Parameters = parameterTypes.Select(e => new ParameterSymbol(e, context)).ToImmutableArray();
-            ReturnType = returnType;
+            ReturnType = NormalizeReturnType(context, returnType);
             IsStatic = isStatic;
             IsConstructor = isConstructor;
             
@@ -27,10 +28,15 @@ namespace UdonSharp.Compiler.Symbols
             : base(null, context)
         {
             Parameters = parameterTypes.Select(e => new ParameterSymbol(e, context)).ToImmutableArray();
-            ReturnType = returnType;
+            ReturnType = NormalizeReturnType(context, returnType);
             IsStatic = isStatic;
             IsConstructor = isConstructor;
             ExternSignature = externSignature;
+        }
+
+        private static TypeSymbol NormalizeReturnType(AbstractPhaseContext context, TypeSymbol returnType)
+        {
+            return returnType == context.GetTypeSymbol(SpecialType.System_Void) ? null : returnType;
         }
 
         private string BuildExternSignature(TypeSymbol containingType, string methodName)

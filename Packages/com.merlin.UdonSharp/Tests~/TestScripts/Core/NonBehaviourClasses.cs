@@ -50,6 +50,30 @@ namespace UdonSharp.Tests
             return a;
         }
     }
+
+    internal class DictionaryKeyClass
+    {
+        public int Id;
+
+        public DictionaryKeyClass(int id)
+        {
+            Id = id;
+        }
+
+        public override bool Equals(object obj)
+        {
+            DictionaryKeyClass other = obj as DictionaryKeyClass;
+            if (other == null)
+                return false;
+
+            return Id == other.Id;
+        }
+
+        public override int GetHashCode()
+        {
+            return Id.GetHashCode();
+        }
+    }
     
     [AddComponentMenu("Udon Sharp/Tests/NonBehaviourClasses")]
     public class NonBehaviourClasses : UdonSharpBehaviour
@@ -211,6 +235,81 @@ namespace UdonSharp.Tests
             tester.TestAssertion("Dictionary Generic Iterator", sum == sum3);
             
             tester.TestAssertion("Dictionary Generic TryGetValue", intDict.TryGetValue("50", out int val) && val == 50);
+
+            List<KeyValuePair<string, int>> pairList = new List<KeyValuePair<string, int>>();
+            foreach (KeyValuePair<string, int> pair in intDict)
+            {
+                pairList.Add(pair);
+            }
+
+            tester.TestAssertion("Dictionary KeyValuePair List Count", pairList.Count == 100);
+
+            int pairListSum = 0;
+            bool pairListDistinct = true;
+            for (int i = 0; i < pairList.Count; ++i)
+            {
+                pairListSum += pairList[i].Value;
+                if (pairList[i].Key != pairList[i].Value.ToString())
+                    pairListDistinct = false;
+            }
+
+            tester.TestAssertion("Dictionary KeyValuePair List Sum", pairListSum == sum);
+            tester.TestAssertion("Dictionary KeyValuePair List Distinct", pairListDistinct);
+            tester.TestAssertion("Dictionary KeyValuePair List First", pairList[0].Key == pairList[0].Value.ToString());
+            tester.TestAssertion("Dictionary KeyValuePair List Last", pairList[99].Key == pairList[99].Value.ToString());
+
+            Dictionary<DictionaryKeyClass, string> customKeyDict = new Dictionary<DictionaryKeyClass, string>();
+            DictionaryKeyClass keyA = new DictionaryKeyClass(1);
+            DictionaryKeyClass keyB = new DictionaryKeyClass(1);
+            DictionaryKeyClass keyC = new DictionaryKeyClass(2);
+
+            customKeyDict.Add(keyA, "Hello");
+
+            tester.TestAssertion("Dictionary Custom Key Same Instance", customKeyDict.ContainsKey(keyA));
+            tester.TestAssertion("Dictionary Custom Key Equal Instance", customKeyDict.ContainsKey(keyB));
+            tester.TestAssertion("Dictionary Custom Key Indexer", customKeyDict[keyB] == "Hello");
+            tester.TestAssertion("Dictionary Custom Key TryGetValue", customKeyDict.TryGetValue(keyB, out string customVal) && customVal == "Hello");
+            tester.TestAssertion("Dictionary Custom Key Missing", customKeyDict.ContainsKey(keyC) == false);
+
+            customKeyDict[keyB] = "World";
+            tester.TestAssertion("Dictionary Custom Key Update", customKeyDict[keyA] == "World");
+            tester.TestAssertion("Dictionary Custom Key Count", customKeyDict.Count == 1);
+
+            customKeyDict.Add(keyC, "Other");
+            tester.TestAssertion("Dictionary Custom Key Add Distinct", customKeyDict.Count == 2);
+            tester.TestAssertion("Dictionary Custom Key Remove", customKeyDict.Remove(new DictionaryKeyClass(1)));
+            tester.TestAssertion("Dictionary Custom Key Remove Count", customKeyDict.Count == 1);
+            tester.TestAssertion("Dictionary Custom Key Remaining", customKeyDict[keyC] == "Other");
+
+            object boxedKey = keyC;
+            tester.TestAssertion("User Class As Cast", (boxedKey as DictionaryKeyClass) != null);
+            tester.TestAssertion("User Class As Cast Id", (boxedKey as DictionaryKeyClass).Id == 2);
+            tester.TestAssertion("User Class Is Check", boxedKey is DictionaryKeyClass);
+            tester.TestAssertion("User Class As Wrong Type", (boxedKey as MyNonBehaviourClass) == null);
+
+            Dictionary<DictionaryKeyClass, int> customPairSource = new Dictionary<DictionaryKeyClass, int>();
+            customPairSource.Add(new DictionaryKeyClass(10), 1);
+            customPairSource.Add(new DictionaryKeyClass(20), 2);
+            customPairSource.Add(new DictionaryKeyClass(30), 3);
+
+            List<KeyValuePair<DictionaryKeyClass, int>> customPairList = new List<KeyValuePair<DictionaryKeyClass, int>>();
+            foreach (KeyValuePair<DictionaryKeyClass, int> pair in customPairSource)
+            {
+                customPairList.Add(pair);
+            }
+
+            tester.TestAssertion("Custom KeyValuePair List Count", customPairList.Count == 3);
+
+            int customPairIdSum = 0;
+            int customPairValueSum = 0;
+            for (int i = 0; i < customPairList.Count; ++i)
+            {
+                customPairIdSum += customPairList[i].Key.Id;
+                customPairValueSum += customPairList[i].Value;
+            }
+
+            tester.TestAssertion("Custom KeyValuePair List Key Sum", customPairIdSum == 60);
+            tester.TestAssertion("Custom KeyValuePair List Value Sum", customPairValueSum == 6);
         }
 
         private void ExternalReferencedClass()

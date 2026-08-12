@@ -35,7 +35,7 @@ namespace UdonSharp.Lib.Internal.Collections
             _buckets = buckets;
             _bucketIndex = 0;
             _entry = null;
-            _current = new DictionaryKeyValue<TKey, TValue>();
+            _current = null;
         }
 
         public bool MoveNext()
@@ -44,8 +44,12 @@ namespace UdonSharp.Lib.Internal.Collections
             if (entry != null && entry.next != null)
             {
                 _entry = entry.next;
-                _current.key = _entry.key;
-                _current.value = _entry.value;
+                // Allocate a new pair each step. KeyValuePair is a class in U#, so reusing one
+                // instance would make List.Add(kvp) / stored locals all share the last values.
+                DictionaryKeyValue<TKey, TValue> current = new DictionaryKeyValue<TKey, TValue>();
+                current.key = _entry.key;
+                current.value = _entry.value;
+                _current = current;
                 return true;
             }
             
@@ -60,8 +64,10 @@ namespace UdonSharp.Lib.Internal.Collections
                 if (_entry != null)
                 {
                     _bucketIndex = bucketIndex;
-                    _current.key = _entry.key;
-                    _current.value = _entry.value;
+                    DictionaryKeyValue<TKey, TValue> current = new DictionaryKeyValue<TKey, TValue>();
+                    current.key = _entry.key;
+                    current.value = _entry.value;
+                    _current = current;
                     return true;
                 }
             }
